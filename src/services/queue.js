@@ -196,9 +196,27 @@ const processWebhookJob = async (job) => {
 videoProcessingQueue.process(processVideoJob);
 webhookQueue.process(processWebhookJob);
 
+// Handle Redis connection errors gracefully
+videoProcessingQueue.on('error', (error) => {
+  logger.warn('Video processing queue error (Redis unavailable)', {
+    error: error.message,
+    code: error.code
+  });
+});
+
+webhookQueue.on('error', (error) => {
+  logger.warn('Webhook queue error (Redis unavailable)', {
+    error: error.message,
+    code: error.code
+  });
+});
+
 // Queue management functions
 const addVideoProcessingJob = async (data, options = {}) => {
   try {
+    // Check if Redis is available by testing connection
+    await videoProcessingQueue.client.ping();
+    
     const job = await videoProcessingQueue.add('process-video', data, {
       delay: options.delay || 0,
       priority: options.priority || 1,
@@ -212,6 +230,18 @@ const addVideoProcessingJob = async (data, options = {}) => {
     
     return job;
   } catch (error) {
+    if (error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
+      logger.warn('Redis unavailable, skipping queue processing', {
+        videoId: data.videoId,
+        error: error.message
+      });
+      // Return a mock job object for demo mode
+      return {
+        id: 'demo-job-' + Date.now(),
+        data: data,
+        isDemo: true
+      };
+    }
     logger.error('Failed to add video processing job:', error);
     throw error;
   }
@@ -219,6 +249,9 @@ const addVideoProcessingJob = async (data, options = {}) => {
 
 const addWebhookJob = async (data, options = {}) => {
   try {
+    // Check if Redis is available by testing connection
+    await webhookQueue.client.ping();
+    
     const job = await webhookQueue.add('send-webhook', data, {
       delay: options.delay || 0,
       attempts: options.attempts || 5
@@ -226,6 +259,18 @@ const addWebhookJob = async (data, options = {}) => {
     
     return job;
   } catch (error) {
+    if (error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
+      logger.warn('Redis unavailable, skipping webhook processing', {
+        videoId: data.videoId,
+        error: error.message
+      });
+      // Return a mock job object for demo mode
+      return {
+        id: 'demo-webhook-' + Date.now(),
+        data: data,
+        isDemo: true
+      };
+    }
     logger.error('Failed to add webhook job:', error);
     throw error;
   }

@@ -633,6 +633,33 @@ docker run -p 3000:3000 \
 - **Helmet**: Security headers
 - **Environment Variables**: No hardcoded secrets
 
+## 📁 Cloudinary Integration
+
+### Supported File Types
+- **Videos**: MP4, AVI, MOV, WMV, FLV, WebM, and more
+- **Images**: JPG, PNG, GIF, WebP, SVG, and more
+- **Maximum file size**: 100MB (configurable)
+
+### Cloudinary Features
+- **Automatic optimization** and format conversion
+- **Secure storage** with automatic backup
+- **Global CDN** for fast delivery
+- **On-the-fly transformations** and effects
+- **Automatic video transcoding**
+
+### Demo Mode
+When database is unavailable, the API automatically switches to demo mode:
+- ✅ Authentication works with demo credentials
+- ✅ Video registration from Cloudinary URLs
+- ✅ Video status and listing endpoints
+- ✅ All API endpoints return demo data
+- ❌ Actual video processing is disabled
+- ❌ Database operations are simulated
+
+**Demo Credentials:**
+- Email: `demo@example.com`
+- Password: `demo123`
+
 ## 🛠️ Troubleshooting
 
 ### Common Issues
@@ -644,6 +671,7 @@ docker run -p 3000:3000 \
 - Verify PostgreSQL is running and accessible
 - Check `DATABASE_URL` format
 - Ensure database exists
+- **Demo Mode**: If database is unavailable, the API automatically switches to demo mode with limited functionality
 
 **Redis connection failed**
 - Verify Redis server is running
@@ -655,13 +683,55 @@ docker run -p 3000:3000 \
 **Face detection models missing**
 - Run: `npm run download-models`
 
-### Debug Mode
+**Cloudinary Configuration**
+- Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in your `.env` file
+- Cloudinary supports all video formats and provides automatic optimization
+- Videos are stored securely with automatic backup and CDN delivery
+
+### Debug Mode & Logging
+
 ```bash
 # Enable debug logging
 LOG_LEVEL=debug npm start
 
 # Test database connection
 node -e "require('./src/config/database').testConnection()"
+
+# View logs in real-time
+tail -f logs/combined.log
+
+# View error logs specifically
+tail -f logs/error.log
+```
+
+### Accessing Logs
+
+**Local Development:**
+- Combined logs: `logs/combined.log`
+- Error logs: `logs/error.log`
+- Console output: Terminal window running the server
+
+**Production/Render:**
+- Use `render logs` command or check the Render dashboard
+- Logs include authentication attempts, API calls, and processing events
+- Look for "demo mode" indicators when database is unavailable
+
+**Log Levels:**
+- `error`: Critical errors only
+- `warn`: Warnings and important events (default)
+- `info`: General information and API calls
+- `debug`: Detailed debugging information
+
+**Common Log Patterns:**
+```
+# Successful authentication
+info: Authentication successful (demo mode) {"userId": 123, "email": "demo@example.com"}
+
+# Video registration
+info: Video registration request received {"userId": 123, "filename": "video.mp4", "demoMode": true}
+
+# Database unavailable (automatic fallback)
+warn: Database not available, using demo user from token {"userId": 123, "email": "demo@example.com"}
 ```
 
 ## 📚 Additional Resources

@@ -1,0 +1,50 @@
+2025-10-01T01:47:02.014641571Z 
+2025-10-01T01:47:02.014652612Z 3 vulnerabilities (2 low, 1 high)
+2025-10-01T01:47:02.014655642Z 
+2025-10-01T01:47:02.014658722Z To address all issues (including breaking changes), run:
+2025-10-01T01:47:02.014662343Z   npm audit fix --force
+2025-10-01T01:47:02.014665093Z 
+2025-10-01T01:47:02.014668513Z Run `npm audit` for details.
+2025-10-01T01:47:21.285923868Z ==> Uploading build...
+2025-10-01T01:47:32.033540467Z ==> Uploaded in 6.3s. Compression took 4.5s
+2025-10-01T01:47:32.075025064Z ==> Build successful 🎉
+2025-10-01T01:47:37.745867763Z ==> Deploying...
+2025-10-01T01:47:54.262746872Z ==> Running 'npm start'
+2025-10-01T01:47:55.360860375Z 
+2025-10-01T01:47:55.360891867Z > video-face-blur-backend@1.0.0 start
+2025-10-01T01:47:55.360896787Z > node src/server.js
+2025-10-01T01:47:55.36093246Z 
+2025-10-01T01:47:59.65930942Z Database connection failed: AggregateError [ECONNREFUSED]: 
+2025-10-01T01:47:59.659328122Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2025-10-01T01:47:59.659331942Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2025-10-01T01:47:59.659334132Z     at async connectDatabase (/opt/render/project/src/src/config/database.js:34:5)
+2025-10-01T01:47:59.659336262Z     at async startServer (/opt/render/project/src/src/server.js:147:7) {
+2025-10-01T01:47:59.659340882Z   code: 'ECONNREFUSED',
+2025-10-01T01:47:59.659344803Z   [errors]: [
+2025-10-01T01:47:59.659349883Z     Error: connect ECONNREFUSED ::1:5432
+2025-10-01T01:47:59.659353413Z         at createConnectionError (node:net:1678:14)
+2025-10-01T01:47:59.659357033Z         at afterConnectMultiple (node:net:1708:16) {
+2025-10-01T01:47:59.659360314Z       errno: -111,
+2025-10-01T01:47:59.659364394Z       code: 'ECONNREFUSED',
+2025-10-01T01:47:59.659367684Z       syscall: 'connect',
+2025-10-01T01:47:59.659370685Z       address: '::1',
+2025-10-01T01:47:59.659373555Z       port: 5432
+2025-10-01T01:47:59.659376985Z     },
+2025-10-01T01:47:59.659381155Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2025-10-01T01:47:59.659384315Z         at createConnectionError (node:net:1678:14)
+2025-10-01T01:47:59.659386426Z         at afterConnectMultiple (node:net:1708:16) {
+2025-10-01T01:47:59.659388516Z       errno: -111,
+2025-10-01T01:47:59.659390566Z       code: 'ECONNREFUSED',
+2025-10-01T01:47:59.659392656Z       syscall: 'connect',
+2025-10-01T01:47:59.659394666Z       address: '127.0.0.1',
+2025-10-01T01:47:59.659396796Z       port: 5432
+2025-10-01T01:47:59.659398887Z     }
+2025-10-01T01:47:59.659400956Z   ]
+2025-10-01T01:47:59.659403047Z }
+2025-10-01T01:48:08.373552108Z ==> Your service is live 🎉
+2025-10-01T01:48:08.398304658Z ==> 
+2025-10-01T01:48:08.420563187Z ==> ///////////////////////////////////////////////////////////
+2025-10-01T01:48:08.442730237Z ==> 
+2025-10-01T01:48:08.465884076Z ==> Available at your primary URL https://facecensor.onrender.com
+2025-10-01T01:48:08.489542576Z ==> 
+2025-10-01T01:48:08.525774246Z ==> ///////////////////////////////////////////////////////////

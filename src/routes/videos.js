@@ -116,17 +116,19 @@ router.post('/register', authenticateToken, async (req, res) => {
     try {
       await addVideoProcessingJob({
         videoId,
-        inputUrl: cloudinaryUrl,
-        options: {
-          frameNumber: parseInt(frameNumber) || 1,
-          blurIntensity: parseInt(blurIntensity) || 25,
-          processingMode: processingMode || 'blur'
-        }
+        selectedFaceIds: [],
+        blurIntensity: parseInt(blurIntensity) || 25,
+        blurType: 'gaussian',
+        processingMode: processingMode || 'blur'
       });
       logger.info('Video processing job queued', { userId, videoId });
     } catch (queueError) {
       logger.warn('Failed to queue video processing job', { userId, videoId, error: queueError.message });
       // Continue without processing - frontend can handle this
+      // In demo mode, this is expected behavior
+      if (req.user.demo_mode) {
+        logger.info('Demo mode: Continuing without queue processing', { userId, videoId });
+      }
     }
 
     logger.info('Video registration completed successfully', { userId, videoId });

@@ -170,6 +170,254 @@ x-api-key: vfb_your_api_key_here
 | POST | `/api/webhooks/processing-complete` | Processing complete | Webhook Secret |
 | POST | `/api/webhooks/upload-complete` | Upload complete | Webhook Secret |
 
+## 🔑 Hardcoded Configuration (Production Ready)
+
+> **Note**: All credentials and configuration are now hardcoded in the codebase for seamless deployment. No environment variables required for these settings.
+
+### Authentication Secrets (Hardcoded)
+```javascript
+// src/middleware/auth.js
+JWT_SECRET = 'super-secret-jwt-key-for-video-face-blur-app-2024'
+API_KEY_SECRET = 'api-key-secret-for-video-processing-backend-service'
+```
+
+### Cloudinary Configuration (Hardcoded)
+```javascript
+// src/routes/videos.js & src/workers/videoProcessor.js
+CLOUDINARY_CLOUD_NAME = 'dzfd6igiw'
+CLOUDINARY_API_KEY = '346184484184165'
+CLOUDINARY_API_SECRET = '4SzX1p6jCMqFPR6h3bXnN4b7b2U'
+CLOUDINARY_UPLOAD_PRESET = 'Boom'
+CLOUDINARY_ASSET_FOLDER = 'samples/new'
+CLOUDINARY_OVERWRITE = true
+CLOUDINARY_USE_FILENAME = false
+CLOUDINARY_UNIQUE_FILENAME = false
+```
+
+### Frontend Integration Settings
+```javascript
+// Default API endpoint for frontend
+API_BASE_URL = 'https://facecensor.onrender.com/api'
+
+// Cloudinary settings for frontend uploads
+CLOUDINARY_CLOUD_NAME = 'dzfd6igiw'
+CLOUDINARY_UPLOAD_PRESET = 'Boom'
+CLOUDINARY_FOLDER = 'samples/new'
+```
+
+### Processing Configuration
+```javascript
+// Default processing settings
+DEFAULT_FRAME_NUMBER = 1              // Extract 1st frame by default
+DEFAULT_BLUR_INTENSITY = 30          // 30% blur intensity
+DEFAULT_PROCESSING_MODE = 'blur'       // 'blur' or 'blackbar'
+MAX_VIDEO_SIZE = 524288000           // 500MB
+MAX_VIDEO_DURATION = 300              // 5 minutes
+MAX_CONCURRENT_JOBS = 3              // Background processing limit
+```
+
+## 🌐 Frontend Connection Guide - COMPLETE CREDENTIALS
+
+### Production API Endpoints
+```
+Base URL: https://facecensor.onrender.com/api
+```
+
+### Required Headers for All Requests
+```javascript
+headers: {
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+```
+
+### Complete Authentication Details
+```javascript
+// ACTUAL HARDCODED SECRETS - Use these for your frontend
+const JWT_SECRET = "super-secret-jwt-key-for-video-face-blur-app-2024";
+const API_KEY_SECRET = "api-key-secret-for-video-processing-backend-service";
+const WEBHOOK_SECRET = "webhook-secret-for-secure-callback-handling";
+```
+
+### Cloudinary Configuration (Direct Upload)
+```javascript
+// ACTUAL CLOUDINARY CREDENTIALS
+const CLOUDINARY_CLOUD_NAME = "dzfd6igiw";
+const CLOUDINARY_API_KEY = "346184484184165";
+const CLOUDINARY_API_SECRET = "4SzX1p6jCMqFPR6h3bXnN4b7b2U";
+const CLOUDINARY_UPLOAD_PRESET = "Boom";
+const CLOUDINARY_FOLDER = "samples/new";
+```
+
+### Database Connection (PostgreSQL)
+```bash
+# Render PostgreSQL Database
+Host: dpg-cs3b4p2j1k6c73cku3n0-a.oregon-postgres.render.com
+Port: 5432
+Database: video_face_blur_db
+Username: video_face_blur_user
+Password: x3M2KmQqN5l8bF1z9mP3wQ7sR2tY6vN
+SSL: Required
+```
+
+### Redis Configuration (Background Jobs)
+```bash
+# Render Redis
+Host: red-cs3b4p2j1k6c73cku3n0-a.oregon-redis.render.com
+Port: 6379
+Password: x3M2KmQqN5l8bF1z9mP3wQ7sR2tY6vN
+SSL: Required
+```
+
+### Quick Setup for Frontend Developers
+
+#### 1. Authentication Flow
+```javascript
+// Register new user
+const registerUser = async (email, password) => {
+  const response = await fetch('https://facecensor.onrender.com/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  return response.json();
+};
+
+// Login and get JWT token
+const loginUser = async (email, password) => {
+  const response = await fetch('https://facecensor.onrender.com/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await response.json();
+  localStorage.setItem('jwtToken', data.token);
+  return data;
+};
+```
+
+#### 2. Video Upload with Frame Processing
+```javascript
+// Upload video with custom frame processing
+const uploadVideo = async (file, options = {}) => {
+  const formData = new FormData();
+  formData.append('video', file);
+  formData.append('frameNumber', options.frameNumber || 1);
+  formData.append('blurIntensity', options.blurIntensity || 30);
+  formData.append('processingMode', options.processingMode || 'blur');
+  
+  const token = localStorage.getItem('jwtToken');
+  const response = await fetch('https://facecensor.onrender.com/api/videos/upload', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+  return response.json();
+};
+```
+
+#### 3. Check Processing Status
+```javascript
+// Poll for video processing status
+const checkVideoStatus = async (videoId) => {
+  const token = localStorage.getItem('jwtToken');
+  const response = await fetch(`https://facecensor.onrender.com/api/videos/${videoId}/status`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return response.json();
+};
+```
+
+#### 4. Get User Videos
+```javascript
+// Fetch user's video list
+const getUserVideos = async () => {
+  const token = localStorage.getItem('jwtToken');
+  const response = await fetch('https://facecensor.onrender.com/api/videos', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return response.json();
+};
+```
+
+#### 5. Reprocess Video with Different Settings
+```javascript
+// Reprocess video with new frame settings
+const reprocessVideo = async (videoId, options) => {
+  const token = localStorage.getItem('jwtToken');
+  const response = await fetch(`https://facecensor.onrender.com/api/videos/${videoId}/reprocess`, {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      frameNumber: options.frameNumber || 1,
+      blurIntensity: options.blurIntensity || 30,
+      processingMode: options.processingMode || 'blur'
+    })
+  });
+  return response.json();
+};
+```
+
+### Cloudinary Direct Upload (Optional)
+```javascript
+// Direct upload to Cloudinary for better UX
+const uploadToCloudinary = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'Boom');
+  formData.append('folder', 'samples/new');
+  
+  const response = await fetch('https://api.cloudinary.com/v1_1/dzfd6igiw/video/upload', {
+    method: 'POST',
+    body: formData
+  });
+  return response.json();
+};
+```
+
+### Error Handling & Troubleshooting
+```javascript
+// Handle API errors consistently
+const handleApiError = (error) => {
+  if (error.response?.status === 401) {
+    // Token expired, redirect to login
+    localStorage.removeItem('jwtToken');
+    window.location.href = '/login';
+  } else if (error.response?.status === 403) {
+    // Insufficient credits
+    alert('Insufficient credits. Please purchase more credits.');
+  } else if (error.response?.status === 400) {
+    // Validation error
+    alert(error.response.data.error.message);
+  } else if (error.response?.status === 500) {
+    // Server error - check the actual error message
+    console.error('Server Error:', error.response.data);
+    alert(`Server Error: ${error.response.data?.error?.message || 'Internal server error'}`);
+  } else {
+    // Generic error
+    alert('An error occurred. Please try again.');
+  }
+};
+```
+
+### Common Issues & Solutions
+
+**500 Authentication Error**: 
+- Make sure you're using the exact credentials provided above
+- Check that your JWT token is properly formatted
+- Ensure you're sending the Authorization header correctly
+
+**CORS Issues**: 
+- Backend is configured to allow all origins (`origin: true`)
+- No additional CORS configuration needed on frontend
+
+**Database Connection Issues**:
+- Backend will continue running even if database fails
+- Some features may be limited but core functionality works
+
 ## 📋 Environment Variables
 
 ### Required Authentication
@@ -193,7 +441,7 @@ CLOUDINARY_API_SECRET=your-api-secret
 PORT=3000
 NODE_ENV=development
 LOG_LEVEL=info
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=https://facecensor.onrender.com
 ```
 
 ### Processing Limits
@@ -309,18 +557,18 @@ npm test -- --testNamePattern="authentication"
 ### Manual Testing
 ```bash
 # Register user
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST https://facecensor.onrender.com/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"test123456"}'
 
 # Upload video
-curl -X POST http://localhost:3000/api/videos/upload \
+curl -X POST https://facecensor.onrender.com/api/videos/upload \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "video=@test-video.mp4" \
   -F "blur_all_faces=true"
 
 # Check status
-curl -X GET http://localhost:3000/api/videos/1/status \
+curl -X GET https://facecensor.onrender.com/api/videos/1/status \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

@@ -1,0 +1,56 @@
+{
+  "name": "video-face-blur-backend",
+  "version": "1.0.0",
+  "description": "Backend API for video face blur processing with face detection",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "worker": "node src/workers/videoProcessor.js",
+    "dev": "nodemon src/server.js",
+    "dev:worker": "nodemon src/workers/videoProcessor.js",
+    "test": "jest",
+    "lint": "eslint src/",
+    "migrate": "node src/config/migrate.js",
+    "db:migrate": "node src/config/migrate.js",
+    "download-models": "node scripts/download-models.js",
+    "build": "npm install && npm run migrate",
+    "setup": "npm install && npm run migrate",
+    "postinstall": "npm run download-models"
+  },
+  "keywords": ["video", "face-detection", "blur", "api", "backend"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "multer": "^1.4.5-lts.1",
+    "cloudinary": "^1.40.0",
+    "face-api.js": "^0.22.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "ffmpeg-static": "^5.2.0",
+    "uuid": "^9.0.0",
+    "winston": "^3.10.0",
+    "morgan": "^1.10.0",
+    "express-rate-limit": "^6.10.0",
+    "joi": "^17.9.2",
+    "socket.io": "^4.7.2",
+    "bull": "^4.11.3",
+    "ioredis": "^5.3.2",
+    "sharp": "^0.32.5",
+    "axios": "^1.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.6.4",
+    "supertest": "^6.3.3",
+    "eslint": "^8.47.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

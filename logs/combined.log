@@ -1,0 +1,6 @@
+{"environment":"development","level":"info","message":"Starting database migration...","service":"video-face-blur-api","timestamp":"2025-10-01 05:57:33"}
+{"code":"ECONNREFUSED","environment":"development","level":"error","message":"Database migration failed:","service":"video-face-blur-api","stack":"AggregateError [ECONNREFUSED]: \n    at C:\\Users\\pakak\\.cursor\\Faceblur\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async query (C:\\Users\\pakak\\.cursor\\Faceblur\\src\\config\\database.js:18:17)\n    at async createTables (C:\\Users\\pakak\\.cursor\\Faceblur\\src\\config\\migrate.js:9:5)","timestamp":"2025-10-01 05:57:33"}
+{"environment":"development","level":"warn","message":"Database connection failed, continuing without database: ","service":"video-face-blur-api","timestamp":"2025-10-01 06:05:30"}
+{"environment":"development","level":"warn","message":"Some features may not be available","service":"video-face-blur-api","timestamp":"2025-10-01 06:05:30"}
+{"environment":"development","level":"info","message":"Server running on port 3000","service":"video-face-blur-api","timestamp":"2025-10-01 06:05:30"}
+{"environment":"development","level":"info","message":"Environment: development","service":"video-face-blur-api","timestamp":"2025-10-01 06:05:30"}

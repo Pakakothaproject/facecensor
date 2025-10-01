@@ -1,0 +1,75 @@
+{
+  "name": "FaceBlur Video Processor",
+  "description": "Video face blurring service with frame screenshots and multiple processing modes",
+  "repository": "https://github.com/your-username/faceblur-video-processor",
+  "logo": "https://example.com/logo.png",
+  "keywords": ["video", "face-blur", "privacy", "cloudinary", "ffmpeg", "nodejs"],
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    },
+    "PORT": {
+      "description": "Port to run the application on",
+      "value": "3000"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL database connection string",
+      "required": true
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT token generation",
+      "generator": "secret",
+      "required": true
+    },
+    "API_KEY_SECRET": {
+      "description": "Secret key for API key generation",
+      "generator": "secret",
+      "required": true
+    },
+    "WEBHOOK_SECRET": {
+      "description": "Secret key for webhook verification",
+      "generator": "secret",
+      "required": true
+    },
+    "CLOUDINARY_CLOUD_NAME": {
+      "description": "Cloudinary cloud name",
+      "required": true
+    },
+    "CLOUDINARY_API_KEY": {
+      "description": "Cloudinary API key",
+      "required": true
+    },
+    "CLOUDINARY_API_SECRET": {
+      "description": "Cloudinary API secret",
+      "required": true
+    },
+    "REDIS_URL": {
+      "description": "Redis connection URL for job queue",
+      "required": true
+    },
+    "VIDEO_MAX_SIZE": {
+      "description": "Maximum video file size in bytes",
+      "value": "104857600"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "scripts": {
+    "postdeploy": "npm run migrate"
+  }
+}

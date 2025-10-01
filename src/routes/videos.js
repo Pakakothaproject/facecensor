@@ -10,11 +10,11 @@ const Joi = require('joi');
 
 const router = express.Router();
 
-// Configure Cloudinary
+// Configure Cloudinary with hardcoded credentials
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: 'dzfd6igiw',
+  api_key: '441935579452539',
+  api_secret: 'jvnxDIoNZYLFJ_OOQ57RM8aoY'
 });
 
 // Configure multer for file uploads
@@ -51,11 +51,11 @@ router.post('/upload', authenticateToken, upload.single('video'), async (req, re
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: 'video',
-          folder: process.env.CLOUDINARY_ASSET_FOLDER || 'video-face-blur/uploads',
+          folder: 'samples/new',
           public_id: videoId,
-          overwrite: process.env.CLOUDINARY_OVERWRITE === 'true',
-          use_filename: process.env.CLOUDINARY_USE_FILENAME === 'true',
-          unique_filename: process.env.CLOUDINARY_UNIQUE_FILENAME === 'true',
+          overwrite: true,
+          use_filename: false,
+          unique_filename: false,
           eager: [
             { format: 'mp4', quality: 'auto' }
           ]

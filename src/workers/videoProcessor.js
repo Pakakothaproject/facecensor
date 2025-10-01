@@ -12,11 +12,11 @@ const { logger } = require('../utils/logger');
 // Configure FFmpeg
 ffmpeg.setFfmpegPath(ffmpegStatic);
 
-// Configure Cloudinary
+// Configure Cloudinary with hardcoded credentials
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: 'dzfd6igiw',
+  api_key: '441935579452539',
+  api_secret: 'jvnxDIoNZYLFJ_OOQ57RM8aoY'
 });
 
 // Global variables for models
@@ -253,15 +253,15 @@ const processVideo = async (job) => {
       const processedPath = path.join(tempDir, `frame_${frameNumber}_${publicIdSuffix}.jpg`);
       await fs.writeFile(processedPath, processedBuffer);
       
-      // Upload processed screenshot to Cloudinary with custom settings
+      // Upload processed screenshot to Cloudinary with hardcoded settings
       logger.info('Uploading processed screenshot to Cloudinary', { videoId, processingMode });
       const uploadResult = await cloudinary.uploader.upload(processedPath, {
-        folder: process.env.CLOUDINARY_ASSET_FOLDER || 'video-face-blur/screenshots',
+        folder: 'samples/new',
         public_id: `video_${videoId}_frame_${frameNumber}_${publicIdSuffix}`,
         resource_type: 'image',
-        overwrite: process.env.CLOUDINARY_OVERWRITE === 'true',
-        use_filename: process.env.CLOUDINARY_USE_FILENAME === 'true',
-        unique_filename: process.env.CLOUDINARY_UNIQUE_FILENAME === 'true'
+        overwrite: true,
+        use_filename: false,
+        unique_filename: false
       });
       
       processedScreenshotUrl = uploadResult.secure_url;

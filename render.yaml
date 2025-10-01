@@ -42,12 +42,29 @@ services:
         value: true
       - key: JWT_SECRET
         generateValue: true
+      # Hardcoded Cloudinary credentials
       - key: CLOUDINARY_CLOUD_NAME
-        sync: false
+        value: dzfd6igiw
       - key: CLOUDINARY_API_KEY
-        sync: false
+        value: "441935579452539"
       - key: CLOUDINARY_API_SECRET
-        sync: false
+        value: jvnxDIoNZYLFJ_OOQ57RM8aoY
+      - key: CLOUDINARY_UPLOAD_PRESET
+        value: Boom
+      - key: CLOUDINARY_OVERWRITE
+        value: true
+      - key: CLOUDINARY_USE_FILENAME
+        value: false
+      - key: CLOUDINARY_UNIQUE_FILENAME
+        value: false
+      - key: CLOUDINARY_USE_FILENAME_AS_DISPLAY_NAME
+        value: true
+      - key: CLOUDINARY_USE_ASSET_FOLDER_AS_PUBLIC_ID_PREFIX
+        value: false
+      - key: CLOUDINARY_TYPE
+        value: upload
+      - key: CLOUDINARY_ASSET_FOLDER
+        value: samples/new
       - key: REDIS_URL
         fromService:
           name: faceblur-redis
@@ -78,6 +95,29 @@ services:
         fromService:
           name: faceblur-postgres
           property: password
+      # Hardcoded Cloudinary credentials for worker
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dzfd6igiw
+      - key: CLOUDINARY_API_KEY
+        value: "441935579452539"
+      - key: CLOUDINARY_API_SECRET
+        value: jvnxDIoNZYLFJ_OOQ57RM8aoY
+      - key: CLOUDINARY_UPLOAD_PRESET
+        value: Boom
+      - key: CLOUDINARY_OVERWRITE
+        value: true
+      - key: CLOUDINARY_USE_FILENAME
+        value: false
+      - key: CLOUDINARY_UNIQUE_FILENAME
+        value: false
+      - key: CLOUDINARY_USE_FILENAME_AS_DISPLAY_NAME
+        value: true
+      - key: CLOUDINARY_USE_ASSET_FOLDER_AS_PUBLIC_ID_PREFIX
+        value: false
+      - key: CLOUDINARY_TYPE
+        value: upload
+      - key: CLOUDINARY_ASSET_FOLDER
+        value: samples/new
       - key: REDIS_URL
         fromService:
           name: faceblur-redis

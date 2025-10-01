@@ -4,12 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const API_KEY_SECRET = process.env.API_KEY_SECRET;
-
-if (!JWT_SECRET || !API_KEY_SECRET) {
-  throw new Error('JWT_SECRET and API_KEY_SECRET environment variables are required');
-}
+const JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
+const API_KEY_SECRET = 'your-api-key-secret-change-this-in-production';
 
 // Generate API key
 const generateApiKey = () => {

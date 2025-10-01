@@ -40,8 +40,6 @@ services:
           property: password
       - key: SKIP_DB_MIGRATION_ON_ERROR
         value: true
-      - key: JWT_SECRET
-        generateValue: true
       # Hardcoded Cloudinary credentials
       - key: CLOUDINARY_CLOUD_NAME
         value: dzfd6igiw

@@ -7,13 +7,13 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const logger = require('./utils/logger');
+const { logger } = require('./utils/logger');
 const { connectDatabase } = require('./config/database');
-const { runMigrations } = require('./config/migrate');
+const { createTables } = require('./config/migrate');
 const authRoutes = require('./routes/auth');
 const videoRoutes = require('./routes/videos');
 const webhookRoutes = require('./routes/webhooks');
-const errorHandler = require('./middleware/errorHandler');
+const { errorHandler } = require('./middleware/errorHandler');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();

@@ -7,8 +7,25 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Create Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Function to test database connection
+const connectDatabase = async () => {
+  try {
+    // Test the connection by making a simple query
+    const { data, error } = await supabase.from('videos').select('id').limit(1);
+    if (error) {
+      throw new Error(`Supabase connection failed: ${error.message}`);
+    }
+    console.log('Database connection successful');
+    return true;
+  } catch (error) {
+    console.error('Database connection failed:', error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   supabase,
+  connectDatabase,
   query: async (table, select = '*', filters = {}) => {
     let query = supabase.from(table).select(select);
     

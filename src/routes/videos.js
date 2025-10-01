@@ -46,13 +46,16 @@ router.post('/upload', authenticateToken, upload.single('video'), async (req, re
     
     logger.info('Uploading video', { userId, videoId, filename: req.file.originalname });
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary with custom settings
     const uploadResult = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: 'video',
-          folder: 'video-face-blur/uploads',
+          folder: process.env.CLOUDINARY_ASSET_FOLDER || 'video-face-blur/uploads',
           public_id: videoId,
+          overwrite: process.env.CLOUDINARY_OVERWRITE === 'true',
+          use_filename: process.env.CLOUDINARY_USE_FILENAME === 'true',
+          unique_filename: process.env.CLOUDINARY_UNIQUE_FILENAME === 'true',
           eager: [
             { format: 'mp4', quality: 'auto' }
           ]

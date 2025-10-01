@@ -253,12 +253,15 @@ const processVideo = async (job) => {
       const processedPath = path.join(tempDir, `frame_${frameNumber}_${publicIdSuffix}.jpg`);
       await fs.writeFile(processedPath, processedBuffer);
       
-      // Upload processed screenshot to Cloudinary
+      // Upload processed screenshot to Cloudinary with custom settings
       logger.info('Uploading processed screenshot to Cloudinary', { videoId, processingMode });
       const uploadResult = await cloudinary.uploader.upload(processedPath, {
-        folder: 'video-face-blur/screenshots',
+        folder: process.env.CLOUDINARY_ASSET_FOLDER || 'video-face-blur/screenshots',
         public_id: `video_${videoId}_frame_${frameNumber}_${publicIdSuffix}`,
-        resource_type: 'image'
+        resource_type: 'image',
+        overwrite: process.env.CLOUDINARY_OVERWRITE === 'true',
+        use_filename: process.env.CLOUDINARY_USE_FILENAME === 'true',
+        unique_filename: process.env.CLOUDINARY_UNIQUE_FILENAME === 'true'
       });
       
       processedScreenshotUrl = uploadResult.secure_url;

@@ -1,47 +1,42 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'faceblur_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// Hardcoded Supabase credentials from your project
+const SUPABASE_URL = 'https://aaitxlxpoplreysthvrf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhaXR4bHhwb3BscmV5c3RodnJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyOTYxNDUsImV4cCI6MjA3NDg3MjE0NX0.jvC1XyxEDDis38hD39UzPGu4x2llShtv65iW-Iq8qpU';
 
-const query = async (text, params) => {
-  const start = Date.now();
-  try {
-    const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
-    return res;
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw error;
-  }
-};
-
-const getClient = async () => {
-  return await pool.connect();
-};
-
-const connectDatabase = async () => {
-  try {
-    await pool.query('SELECT 1');
-    console.log('Database connected successfully');
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    throw error;
-  }
-};
+// Create Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 module.exports = {
-  pool,
-  query,
-  getClient,
-  connectDatabase
+  supabase,
+  query: async (table, select = '*', filters = {}) => {
+    let query = supabase.from(table).select(select);
+    
+    // Apply filters
+    Object.entries(filters).forEach(([key, value]) => {
+      query = query.eq(key, value);
+    });
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    return { rows: data };
+  },
+  
+  insert: async (table, data) => {
+    const { data: result, error } = await supabase.from(table).insert(data);
+    if (error) throw error;
+    return { rows: result };
+  },
+  
+  update: async (table, data, filters) => {
+    let query = supabase.from(table).update(data);
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      query = query.eq(key, value);
+    });
+    
+    const { data: result, error } = await query;
+    if (error) throw error;
+    return { rows: result };
+  }
 };

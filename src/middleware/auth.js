@@ -61,11 +61,23 @@ const authenticateToken = async (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
     const apiKey = req.headers['x-api-key'];
 
+    logger.info('Authentication attempt', { 
+      hasAuthHeader: !!authHeader, 
+      hasToken: !!token, 
+      hasApiKey: !!apiKey,
+      endpoint: req.originalUrl,
+      method: req.method 
+    });
+
     let user = null;
 
     if (token) {
       const decoded = verifyToken(token);
       if (!decoded) {
+        logger.warn('Authentication failed: Invalid or expired token', { 
+          endpoint: req.originalUrl,
+          tokenLength: token ? token.length : 0
+        });
         return res.status(401).json({
           success: false,
           error: {
@@ -93,6 +105,7 @@ const authenticateToken = async (req, res, next) => {
         }
 
         user = result.rows[0];
+        logger.info('Authentication successful (database)', { userId: user.id, email: user.email });
       } catch (dbError) {
         // Database not available, create demo user from token
         logger.warn('Database not available, using demo user from token', { userId: decoded.userId, email: decoded.email });
@@ -104,6 +117,7 @@ const authenticateToken = async (req, res, next) => {
           credits: 100,
           demo_mode: true
         };
+        logger.info('Authentication successful (demo mode)', { userId: user.id, email: user.email });
       }
     } else if (apiKey) {
       // Try to authenticate with database, fallback to demo mode
@@ -145,6 +159,14 @@ const authenticateToken = async (req, res, next) => {
         }
       });
     }
+
+    logger.info('Authentication successful', { 
+      userId: user.id, 
+      email: user.email,
+      demoMode: user.demo_mode || false,
+      endpoint: req.originalUrl,
+      method: req.method 
+    });
 
     req.user = user;
     next();

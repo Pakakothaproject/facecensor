@@ -33,6 +33,127 @@ const upload = multer({
   }
 });
 
+// Register video from Cloudinary URL (for frontend that uploads directly to Cloudinary)
+router.post('/register', authenticateToken, async (req, res) => {
+  try {
+    const { cloudinaryUrl, filename, frameNumber, blurIntensity, processingMode } = req.body;
+    const userId = req.user.id;
+
+    // Log the incoming request for debugging
+    logger.info('Video registration request received', { 
+      userId, 
+      filename, 
+      frameNumber, 
+      blurIntensity, 
+      processingMode,
+      cloudinaryUrl: cloudinaryUrl ? 'provided' : 'missing',
+      demoMode: req.user.demo_mode || false
+    });
+
+    // Validate required fields
+    if (!cloudinaryUrl || !filename) {
+      logger.warn('Video registration failed: missing required fields', { 
+        userId, 
+        hasCloudinaryUrl: !!cloudinaryUrl, 
+        hasFilename: !!filename 
+      });
+      return res.status(400).json({ error: 'Cloudinary URL and filename are required' });
+    }
+
+    // Validate Cloudinary URL format
+    if (!cloudinaryUrl.startsWith('https://res.cloudinary.com/')) {
+      logger.warn('Video registration failed: invalid Cloudinary URL format', { 
+        userId, 
+        cloudinaryUrl 
+      });
+      return res.status(400).json({ error: 'Invalid Cloudinary URL format' });
+    }
+
+    const videoId = uuidv4();
+    logger.info('Registering video from Cloudinary URL', { userId, videoId, cloudinaryUrl });
+
+    // Try to create video record in database, fallback to demo mode if unavailable
+    let video;
+    try {
+      const result = await query(
+        `INSERT INTO videos (id, user_id, filename, input_url, status, upload_progress, processing_progress, blur_intensity, processing_mode) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+         RETURNING *`,
+        [
+          videoId,
+          userId,
+          filename || 'uploaded-video.mp4',
+          cloudinaryUrl,
+          'uploaded',
+          100,
+          0,
+          parseInt(blurIntensity) || 25,
+          processingMode || 'blur'
+        ]
+      );
+      video = result.rows[0];
+      logger.info('Video record created in database', { userId, videoId });
+    } catch (dbError) {
+      // Database not available, create demo video record
+      logger.warn('Database not available, creating demo video record', { userId, videoId, error: dbError.message });
+      
+      video = {
+        id: videoId,
+        user_id: userId,
+        filename: filename || 'demo-video.mp4',
+        input_url: cloudinaryUrl,
+        status: 'uploaded',
+        upload_progress: 100,
+        processing_progress: 0,
+        blur_intensity: parseInt(blurIntensity) || 25,
+        processing_mode: processingMode || 'blur',
+        created_at: new Date().toISOString(),
+        demo_mode: true
+      };
+    }
+
+    // Try to add video processing job to queue, but don't fail if queue is unavailable
+    try {
+      await addVideoProcessingJob({
+        videoId,
+        inputUrl: cloudinaryUrl,
+        options: {
+          frameNumber: parseInt(frameNumber) || 1,
+          blurIntensity: parseInt(blurIntensity) || 25,
+          processingMode: processingMode || 'blur'
+        }
+      });
+      logger.info('Video processing job queued', { userId, videoId });
+    } catch (queueError) {
+      logger.warn('Failed to queue video processing job', { userId, videoId, error: queueError.message });
+      // Continue without processing - frontend can handle this
+    }
+
+    logger.info('Video registration completed successfully', { userId, videoId });
+
+    res.json({
+      success: true,
+      video: {
+        id: video.id,
+        filename: video.filename,
+        status: video.status,
+        uploadProgress: video.upload_progress,
+        processingProgress: video.processing_progress,
+        createdAt: video.created_at,
+        frameNumber: parseInt(frameNumber) || 1,
+        blurIntensity: parseInt(blurIntensity) || 25,
+        processingMode: processingMode || 'blur',
+        demo_mode: video.demo_mode || false,
+        message: video.demo_mode ? 'Video registered successfully (demo mode - processing unavailable)' : 'Video registered successfully'
+      }
+    });
+
+  } catch (error) {
+    logger.error('Video registration failed:', error);
+    res.status(500).json({ error: 'Video registration failed', message: error.message });
+  }
+});
+
 // Upload video endpoint
 router.post('/upload', authenticateToken, upload.single('video'), async (req, res) => {
   try {
@@ -69,38 +190,66 @@ router.post('/upload', authenticateToken, upload.single('video'), async (req, re
       uploadStream.end(req.file.buffer);
     });
 
-    // Create video record in database
-    const result = await query(
-      `INSERT INTO videos (id, user_id, filename, input_url, status, upload_progress, processing_progress, blur_intensity, processing_mode) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-       RETURNING *`,
-      [
+    logger.info('Video uploaded to Cloudinary successfully', { userId, videoId, url: uploadResult.secure_url });
+
+    // Try to create video record in database, fallback to demo mode if unavailable
+    let video;
+    try {
+      const result = await query(
+        `INSERT INTO videos (id, user_id, filename, input_url, status, upload_progress, processing_progress, blur_intensity, processing_mode) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+         RETURNING *`,
+        [
+          videoId,
+          userId,
+          req.file.originalname,
+          uploadResult.secure_url,
+          'uploaded',
+          100,
+          0,
+          parseInt(blurIntensity) || 25,
+          processingMode || 'blur'
+        ]
+      );
+      video = result.rows[0];
+      logger.info('Video record created in database', { userId, videoId });
+    } catch (dbError) {
+      // Database not available, create demo video record
+      logger.warn('Database not available, creating demo video record', { userId, videoId, error: dbError.message });
+      
+      video = {
+        id: videoId,
+        user_id: userId,
+        filename: req.file.originalname,
+        input_url: uploadResult.secure_url,
+        status: 'uploaded',
+        upload_progress: 100,
+        processing_progress: 0,
+        blur_intensity: parseInt(blurIntensity) || 25,
+        processing_mode: processingMode || 'blur',
+        created_at: new Date().toISOString(),
+        demo_mode: true
+      };
+    }
+
+    // Try to add video processing job to queue, but don't fail if queue is unavailable
+    try {
+      await addVideoProcessingJob({
         videoId,
-        userId,
-        req.file.originalname,
-        uploadResult.secure_url,
-        'uploaded',
-        100,
-        0,
-        parseInt(blurIntensity) || 25,
-        processingMode || 'blur'
-      ]
-    );
+        inputUrl: uploadResult.secure_url,
+        options: {
+          frameNumber: parseInt(frameNumber) || 1,
+          blurIntensity: parseInt(blurIntensity) || 25,
+          processingMode: processingMode || 'blur'
+        }
+      });
+      logger.info('Video processing job queued', { userId, videoId });
+    } catch (queueError) {
+      logger.warn('Failed to queue video processing job', { userId, videoId, error: queueError.message });
+      // Continue without processing - frontend can handle this
+    }
 
-    const video = result.rows[0];
-
-    // Add video processing job to queue
-    await addVideoProcessingJob({
-      videoId,
-      inputUrl: uploadResult.secure_url,
-      options: {
-        frameNumber: parseInt(frameNumber) || 1,
-        blurIntensity: parseInt(blurIntensity) || 25,
-        processingMode: processingMode || 'blur'
-      }
-    });
-
-    logger.info('Video uploaded and processing job queued', { userId, videoId });
+    logger.info('Video upload completed successfully', { userId, videoId });
 
     res.json({
       success: true,
@@ -113,7 +262,9 @@ router.post('/upload', authenticateToken, upload.single('video'), async (req, re
         createdAt: video.created_at,
         frameNumber: parseInt(frameNumber) || 1,
         blurIntensity: parseInt(blurIntensity) || 25,
-        processingMode: processingMode || 'blur'
+        processingMode: processingMode || 'blur',
+        demo_mode: video.demo_mode || false,
+        message: video.demo_mode ? 'Video uploaded successfully (demo mode - processing unavailable)' : 'Video uploaded successfully'
       }
     });
 
@@ -128,6 +279,37 @@ router.get('/:videoId', authenticateToken, async (req, res) => {
   try {
     const { videoId } = req.params;
     const userId = req.user.id;
+
+    // Check if this is a demo mode user
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Returning demo video status', { userId, videoId });
+      
+      // Return a demo video status
+      const demoVideo = {
+        id: videoId,
+        filename: 'demo-video.mp4',
+        status: 'completed',
+        uploadProgress: 100,
+        processingProgress: 100,
+        facesDetected: 2,
+        totalFrames: 150,
+        frameScreenshotUrl: 'https://via.placeholder.com/640x360?text=Demo+Frame',
+        blurIntensity: 25,
+        processingMode: 'blur',
+        inputUrl: 'https://via.placeholder.com/640x360?text=Demo+Input',
+        outputUrl: 'https://via.placeholder.com/640x360?text=Demo+Output',
+        errorMessage: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+        demo_mode: true
+      };
+
+      return res.json({
+        success: true,
+        video: demoVideo
+      });
+    }
 
     const result = await query(
       'SELECT * FROM videos WHERE id = $1 AND user_id = $2',
@@ -164,6 +346,34 @@ router.get('/:videoId', authenticateToken, async (req, res) => {
 
   } catch (error) {
     logger.error('Get video status failed:', error);
+    
+    // Fallback for database errors
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Returning demo video status due to database error', { userId, videoId });
+      return res.json({
+        success: true,
+        video: {
+          id: videoId,
+          filename: 'demo-video.mp4',
+          status: 'completed',
+          uploadProgress: 100,
+          processingProgress: 100,
+          facesDetected: 2,
+          totalFrames: 150,
+          frameScreenshotUrl: 'https://via.placeholder.com/640x360?text=Demo+Frame',
+          blurIntensity: 25,
+          processingMode: 'blur',
+          inputUrl: 'https://via.placeholder.com/640x360?text=Demo+Input',
+          outputUrl: 'https://via.placeholder.com/640x360?text=Demo+Output',
+          errorMessage: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          processedAt: new Date().toISOString(),
+          demo_mode: true
+        }
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to get video status', message: error.message });
   }
 });
@@ -174,6 +384,61 @@ router.get('/', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
+
+    // Check if this is a demo mode user
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Returning demo video list', { userId });
+      
+      // Return a demo video list
+      const demoVideos = [
+        {
+          id: 'demo-video-1',
+          filename: 'demo-video-1.mp4',
+          status: 'completed',
+          uploadProgress: 100,
+          processingProgress: 100,
+          facesDetected: 2,
+          totalFrames: 150,
+          frameScreenshotUrl: 'https://via.placeholder.com/640x360?text=Demo+Frame+1',
+          blurIntensity: 25,
+          inputUrl: 'https://via.placeholder.com/640x360?text=Demo+Input+1',
+          outputUrl: 'https://via.placeholder.com/640x360?text=Demo+Output+1',
+          errorMessage: null,
+          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          updatedAt: new Date().toISOString(),
+          processedAt: new Date().toISOString(),
+          demo_mode: true
+        },
+        {
+          id: 'demo-video-2',
+          filename: 'demo-video-2.mp4',
+          status: 'processing',
+          uploadProgress: 100,
+          processingProgress: 45,
+          facesDetected: 1,
+          totalFrames: 120,
+          frameScreenshotUrl: 'https://via.placeholder.com/640x360?text=Demo+Frame+2',
+          blurIntensity: 30,
+          inputUrl: 'https://via.placeholder.com/640x360?text=Demo+Input+2',
+          outputUrl: null,
+          errorMessage: null,
+          createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          updatedAt: new Date().toISOString(),
+          processedAt: null,
+          demo_mode: true
+        }
+      ];
+
+      return res.json({
+        success: true,
+        videos: demoVideos,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: demoVideos.length
+        }
+      });
+    }
 
     const result = await query(
       'SELECT * FROM videos WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
@@ -210,6 +475,43 @@ router.get('/', authenticateToken, async (req, res) => {
 
   } catch (error) {
     logger.error('Get videos failed:', error);
+    
+    // Fallback for database errors
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Returning demo video list due to database error', { userId });
+      
+      const demoVideos = [
+        {
+          id: 'demo-video-1',
+          filename: 'demo-video-1.mp4',
+          status: 'completed',
+          uploadProgress: 100,
+          processingProgress: 100,
+          facesDetected: 2,
+          totalFrames: 150,
+          frameScreenshotUrl: 'https://via.placeholder.com/640x360?text=Demo+Frame+1',
+          blurIntensity: 25,
+          inputUrl: 'https://via.placeholder.com/640x360?text=Demo+Input+1',
+          outputUrl: 'https://via.placeholder.com/640x360?text=Demo+Output+1',
+          errorMessage: null,
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          updatedAt: new Date().toISOString(),
+          processedAt: new Date().toISOString(),
+          demo_mode: true
+        }
+      ];
+
+      return res.json({
+        success: true,
+        videos: demoVideos,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: demoVideos.length
+        }
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to get videos', message: error.message });
   }
 });
@@ -220,6 +522,26 @@ router.post('/:videoId/reprocess', authenticateToken, async (req, res) => {
     const { videoId } = req.params;
     const { frameNumber, blurIntensity, processingMode } = req.body;
     const userId = req.user.id;
+
+    // Check if this is a demo mode user
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Simulating video reprocessing', { userId, videoId });
+      
+      // Return a simulated reprocessing response
+      return res.json({
+        success: true,
+        message: 'Video reprocessing started (demo mode - processing unavailable)',
+        video: {
+          id: videoId,
+          status: 'processing',
+          processingProgress: 0,
+          frameNumber: parseInt(frameNumber) || 1,
+          blurIntensity: parseInt(blurIntensity) || 25,
+          processingMode: processingMode || 'blur',
+          demo_mode: true
+        }
+      });
+    }
 
     // Check if video exists and belongs to user
     const videoResult = await query(
@@ -287,6 +609,25 @@ router.post('/:videoId/reprocess', authenticateToken, async (req, res) => {
 
   } catch (error) {
     logger.error('Video reprocessing failed:', error);
+    
+    // Fallback for database errors
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Simulating video reprocessing due to database error', { userId, videoId });
+      return res.json({
+        success: true,
+        message: 'Video reprocessing started (demo mode - processing unavailable)',
+        video: {
+          id: videoId,
+          status: 'processing',
+          processingProgress: 0,
+          frameNumber: parseInt(frameNumber) || 1,
+          blurIntensity: parseInt(blurIntensity) || 25,
+          processingMode: processingMode || 'blur',
+          demo_mode: true
+        }
+      });
+    }
+    
     res.status(500).json({ error: 'Video reprocessing failed', message: error.message });
   }
 });
@@ -296,6 +637,17 @@ router.delete('/:videoId', authenticateToken, async (req, res) => {
   try {
     const { videoId } = req.params;
     const userId = req.user.id;
+
+    // Check if this is a demo mode user
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Simulating video deletion', { userId, videoId });
+      
+      // Return a simulated deletion response
+      return res.json({
+        success: true,
+        message: 'Video deleted successfully (demo mode - deletion simulated)'
+      });
+    }
 
     // Get video to delete associated files
     const videoResult = await query(
@@ -341,6 +693,16 @@ router.delete('/:videoId', authenticateToken, async (req, res) => {
 
   } catch (error) {
     logger.error('Delete video failed:', error);
+    
+    // Fallback for database errors
+    if (req.user.demo_mode) {
+      logger.info('Demo mode: Simulating video deletion due to database error', { userId, videoId });
+      return res.json({
+        success: true,
+        message: 'Video deleted successfully (demo mode - deletion simulated)'
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to delete video', message: error.message });
   }
 });

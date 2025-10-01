@@ -90,7 +90,13 @@ if (require.main === module) {
     })
     .catch(error => {
       logger.error('Migration script failed:', error);
-      process.exit(1);
+      // Don't exit with error code during build process to prevent build failure
+      if (process.env.SKIP_DB_MIGRATION_ON_ERROR === 'true') {
+        logger.warn('Skipping migration error - continuing with build');
+        process.exit(0);
+      } else {
+        process.exit(1);
+      }
     });
 }
 

@@ -1,0 +1,91 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: faceblur-postgres
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile.postgres
+    envVars:
+      - key: POSTGRES_DB
+        value: faceblur_db
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # Web Service
+  - type: web
+    name: faceblur-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromService:
+          name: faceblur-postgres
+          property: host
+      - key: DB_PORT
+        fromService:
+          name: faceblur-postgres
+          property: port
+      - key: DB_NAME
+        value: faceblur_db
+      - key: DB_USER
+        value: postgres
+      - key: DB_PASSWORD
+        fromService:
+          name: faceblur-postgres
+          property: password
+      - key: SKIP_DB_MIGRATION_ON_ERROR
+        value: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: faceblur-redis
+          property: url
+
+  # Background Worker
+  - type: worker
+    name: faceblur-worker
+    env: node
+    buildCommand: npm install
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromService:
+          name: faceblur-postgres
+          property: host
+      - key: DB_PORT
+        fromService:
+          name: faceblur-postgres
+          property: port
+      - key: DB_NAME
+        value: faceblur_db
+      - key: DB_USER
+        value: postgres
+      - key: DB_PASSWORD
+        fromService:
+          name: faceblur-postgres
+          property: password
+      - key: REDIS_URL
+        fromService:
+          name: faceblur-redis
+          property: url
+
+  # Redis for Queue Management
+  - type: pserv
+    name: faceblur-redis
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile.redis

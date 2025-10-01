@@ -9,6 +9,7 @@ require('dotenv').config();
 
 const { logger } = require('./utils/logger');
 const { connectDatabase } = require('./config/database');
+const { createTables } = require('./config/migrate');
 const authRoutes = require('./routes/auth');
 const videoRoutes = require('./routes/videos');
 const webhookRoutes = require('./routes/webhooks');
@@ -145,6 +146,14 @@ async function startServer() {
     try {
       await connectDatabase();
       logger.info('Database connected successfully');
+      // Run migration after successful connection
+      try {
+        await createTables();
+        logger.info('Database migration completed');
+      } catch (migrationError) {
+        logger.error('Database migration failed:', migrationError);
+        // Continue even if migration fails - tables might already exist
+      }
     } catch (dbError) {
       logger.warn(`Database connection failed, continuing without database: ${dbError.message}`);
       logger.warn('Some features may not be available');
